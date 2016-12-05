@@ -18,7 +18,8 @@ package demetra.cli.research;
 
 import be.nbb.demetra.sssts.SeasonalSpecification;
 import be.nbb.demetra.toolset.Record;
-import ec.demetra.ssf.implementations.structural.ModelSpecification;
+import ec.demetra.ssf.implementations.structural.Component;
+import ec.demetra.ssf.implementations.structural.SeasonalModel;
 import ec.tss.TsCollectionInformation;
 import ec.tss.TsInformation;
 import ec.tstoolkit.design.ServiceDefinition;
@@ -35,21 +36,20 @@ import org.openide.util.Lookup;
  * @author Philippe Charles
  */
 @ServiceDefinition(isSingleton = true)
-public interface HsTool {
+public interface SsstsTool {
 
     @Value
     public static class Options {
-        
+
+        SeasonalSpecification.EstimationMethod method;
+        Component noisy;
     }
 
     @Data
-    public static class HsResults implements Record {
-
-        public static String[] items = new String[]{"series", "nvar", "lvar", "svar", "seasvar1", "seasvar2", "llstm", "llhs", "stmbias", "hsbias", "n1", "n2", "n3", "n4", "n5", "n6", "n7", "n8", "n9", "n10", "n11", "n12"};
+    public static class SsstsResults implements Record {
 
         private String name;
-        private int freq;
-        private double nvar, lvar, svar, seasvar1, seasvar2, llstm, llhs, stmbias, hsbias;
+        private double refll, ll, daic, aic, bic, lvar, svar, seasvar, nseasvar, nvar;
         private int[] noisy;
         private String invalidDataCause;
 
@@ -57,45 +57,36 @@ public interface HsTool {
         public InformationSet generate() {
             InformationSet info = new InformationSet();
             info.set("series", name);
-
+            info.set("refll", refll);
+            info.set("ll", ll);
+            info.set("daic", daic);
+            info.set("aic", aic);
+            info.set("bic", bic);
+            info.set("lvar", lvar);
+            info.set("svar", svar);
+            info.set("seasvar", seasvar);
+            info.set("nvar", nvar);
+            info.set("nseasvar", nseasvar);
+            info.set("nnoisy", noisy.length);
+            for (int i=0; i<Math.min(noisy.length,8); ++i){
+                info.set("noisy-"+(i), noisy[i]);
+            }
             if (invalidDataCause != null) {
                 info.set("error", invalidDataCause);
-            } else {
-                info.set("nvar", nvar);
-                info.set("lvar", lvar);
-                info.set("svar", svar);
-                info.set("seasvar1", seasvar1);
-                info.set("seasvar2", seasvar2);
-                info.set("llstm", llstm);
-                info.set("llhs", llhs);
-                info.set("stmbias", stmbias);
-                info.set("hsbias", hsbias);
-                for (int i=0; i<freq; ++i){
-                    info.set("n"+(i+1), isNoisy(i) ? 1 : 0);
-                }
             }
             return info;
         }
-
-        private boolean isNoisy(int pos) {
-            for (int i = 0; i < noisy.length; ++i) {
-                if (noisy[i] == pos) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     @Nonnull
-    HsResults create(@Nonnull TsInformation info, @Nonnull Options options);
+    SsstsResults create(@Nonnull TsInformation info, @Nonnull Options options);
 
     @Nonnull
     default List<InformationSet> create(TsCollectionInformation info, Options options) {
-        return info.items.stream().map(o -> create(o, options).generate()).collect(Collectors.toList());
+        return info.items.parallelStream().map(o -> create(o, options).generate()).collect(Collectors.toList());
     }
 
-    public static HsTool getDefault() {
-        return Lookup.getDefault().lookup(HsTool.class);
+    public static SsstsTool getDefault() {
+        return Lookup.getDefault().lookup(SsstsTool.class);
     }
 }
