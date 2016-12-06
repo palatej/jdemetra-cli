@@ -57,22 +57,25 @@ public interface SsstsTool {
         public InformationSet generate() {
             InformationSet info = new InformationSet();
             info.set("series", name);
-            info.set("refll", refll);
-            info.set("ll", ll);
-            info.set("daic", daic);
-            info.set("aic", aic);
-            info.set("bic", bic);
-            info.set("lvar", lvar);
-            info.set("svar", svar);
-            info.set("seasvar", seasvar);
-            info.set("nvar", nvar);
-            info.set("nseasvar", nseasvar);
-            info.set("nnoisy", noisy.length);
-            for (int i=0; i<Math.min(noisy.length,8); ++i){
-                info.set("noisy-"+(i), noisy[i]);
-            }
             if (invalidDataCause != null) {
                 info.set("error", invalidDataCause);
+            } else {
+                info.set("refll", refll);
+                info.set("ll", ll);
+                info.set("daic", daic);
+                info.set("aic", aic);
+                info.set("bic", bic);
+                info.set("lvar", lvar);
+                info.set("svar", svar);
+                info.set("seasvar", seasvar);
+                info.set("nvar", nvar);
+                info.set("nseasvar", nseasvar);
+                info.set("nnoisy", noisy == null ? 0 : noisy.length);
+                if (noisy != null) {
+                    for (int i = 0; i < Math.min(noisy.length, 8); ++i) {
+                        info.set("noisy-" + (i), noisy[i]);
+                    }
+                }
             }
             return info;
         }

@@ -16,12 +16,11 @@
  */
 package demetra.cli.research;
 
-import be.nbb.demetra.sssts.SSHSMonitor;
-import be.nbb.demetra.sts.BsmSpecification;
-import be.nbb.demetra.sssts.SSHSProcessingFactory;
-import be.nbb.demetra.sssts.SSHSResults;
-import be.nbb.demetra.sssts.SSHSSpecification;
-import demetra.cli.research.SshsTool.SshsResults;
+import be.nbb.demetra.mairline.MixedAirlineMonitor;
+import be.nbb.demetra.mairline.MixedAirlineProcessingFactory;
+import be.nbb.demetra.mairline.MixedAirlineResults;
+import be.nbb.demetra.mairline.MixedAirlineSpecification;
+import demetra.cli.research.MairlineTool.MairlineResults;
 import ec.demetra.ssf.dk.DkConcentratedLikelihood;
 import ec.demetra.ssf.implementations.structural.BasicStructuralModel;
 import ec.demetra.ssf.implementations.structural.Component;
@@ -35,36 +34,28 @@ import org.openide.util.lookup.ServiceProvider;
  *
  * @author Philippe Charles
  */
-@ServiceProvider(service = SshsTool.class)
-public final class SshsToolImpl implements SshsTool {
+@ServiceProvider(service = MairlineTool.class)
+public final class MairlineToolImpl implements MairlineTool {
 
     @Override
-    public SshsResults create(TsInformation info, Options options) {
-        SshsResults result = new SshsResults();
+    public MairlineResults create(TsInformation info, Options options) {
+        MairlineResults result = new MairlineResults();
         result.setName(info.name);
         try {
-            SSHSSpecification spec = new SSHSSpecification();
-            ModelSpecification mspec = new ModelSpecification();
-            mspec.useLevel(ComponentUse.Free);
-            mspec.useSlope(ComponentUse.Free);
-            mspec.useNoise(ComponentUse.Free);
-            mspec.useCycle(ComponentUse.Unused);
+            MixedAirlineSpecification spec = new MixedAirlineSpecification();
             spec.getDecompositionSpec().method=options.getMethod();
-            spec.getDecompositionSpec().noisyComponent=options.getNoisy();
-            CompositeResults rslt = SSHSProcessingFactory.process(info.data, spec);
-            SSHSResults decomp = rslt.get(SSHSProcessingFactory.DECOMPOSITION, SSHSResults.class);
-            SSHSMonitor.MixedEstimation ref = decomp.getAllModels().get(0);
-            SSHSMonitor.MixedEstimation best = decomp.getBestModel();
+            CompositeResults rslt = MixedAirlineProcessingFactory.process(info.data, spec);
+            MixedAirlineResults decomp = rslt.get(MixedAirlineProcessingFactory.DECOMPOSITION, MixedAirlineResults.class);
+            MixedAirlineMonitor.MixedEstimation ref = decomp.getAllModels().get(0);
+            MixedAirlineMonitor.MixedEstimation best = decomp.getBestModel();
             int nparams = 4;
             result.setLl(best.ll.getLogLikelihood());
             result.setRefll(ref.ll.getLogLikelihood());
             result.setDaic(ref.ll.AIC(nparams-1)-best.ll.AIC(nparams));
             result.setAic(best.ll.AIC(nparams));
             result.setBic(best.ll.BIC(nparams));
-            result.setNvar(best.model.getBasicStructuralModel().getVariance(Component.Noise));
-            result.setSvar(best.model.getBasicStructuralModel().getVariance(Component.Slope));
-            result.setLvar(best.model.getBasicStructuralModel().getVariance(Component.Level));
-            result.setSeasvar(best.model.getBasicStructuralModel().getVariance(Component.Seasonal));
+            result.setTh(best.model.getTheta());
+            result.setBth(best.model.getBTheta());
             result.setNseasvar(best.model.getNoisyPeriodsVariance());
             result.setNoisy(best.model.getNoisyPeriods());
 

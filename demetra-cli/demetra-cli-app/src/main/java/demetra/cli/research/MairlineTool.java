@@ -16,10 +16,11 @@
  */
 package demetra.cli.research;
 
+import be.nbb.demetra.mairline.MaSpecification;
+import be.nbb.demetra.mairline.MixedAirlineSpecification;
 import be.nbb.demetra.sssts.SeasonalSpecification;
 import be.nbb.demetra.toolset.Record;
 import ec.demetra.ssf.implementations.structural.Component;
-import ec.demetra.ssf.implementations.structural.SeasonalModel;
 import ec.tss.TsCollectionInformation;
 import ec.tss.TsInformation;
 import ec.tstoolkit.design.ServiceDefinition;
@@ -36,20 +37,19 @@ import org.openide.util.Lookup;
  * @author Philippe Charles
  */
 @ServiceDefinition(isSingleton = true)
-public interface SshsTool {
+public interface MairlineTool {
 
     @Value
     public static class Options {
 
-        SeasonalSpecification.EstimationMethod method;
-        Component noisy;
+        MaSpecification.EstimationMethod method;
     }
 
     @Data
-    public static class SshsResults implements Record {
+    public static class MairlineResults implements Record {
 
         private String name;
-        private double refll, ll, daic, aic, bic, lvar, svar, seasvar, nseasvar, nvar;
+        private double refll, ll, daic, aic, bic, th, bth, nseasvar;
         private int[] noisy;
         private String invalidDataCause;
 
@@ -65,10 +65,8 @@ public interface SshsTool {
                 info.set("daic", daic);
                 info.set("aic", aic);
                 info.set("bic", bic);
-                info.set("lvar", lvar);
-                info.set("svar", svar);
-                info.set("seasvar", seasvar);
-                info.set("nvar", nvar);
+                info.set("th", th);
+                info.set("bth", bth);
                 info.set("nseasvar", nseasvar);
                 info.set("nnoisy", noisy == null ? 0 : noisy.length);
                 if (noisy != null) {
@@ -82,14 +80,14 @@ public interface SshsTool {
     }
 
     @Nonnull
-    SshsResults create(@Nonnull TsInformation info, @Nonnull Options options);
+    MairlineResults create(@Nonnull TsInformation info, @Nonnull Options options);
 
     @Nonnull
     default List<InformationSet> create(TsCollectionInformation info, Options options) {
         return info.items.parallelStream().map(o -> create(o, options).generate()).collect(Collectors.toList());
     }
 
-    public static SshsTool getDefault() {
-        return Lookup.getDefault().lookup(SshsTool.class);
+    public static MairlineTool getDefault() {
+        return Lookup.getDefault().lookup(MairlineTool.class);
     }
 }
